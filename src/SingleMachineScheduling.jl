@@ -1,5 +1,9 @@
 module SingleMachineScheduling
 
-# Write your package code here.
+using Random
+using JuMP, GLPK
+using Gurobi
+
+include("1_rj_sumCj.jl")
 
 end
