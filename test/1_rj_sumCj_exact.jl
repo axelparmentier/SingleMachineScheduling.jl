@@ -24,4 +24,3 @@ srpt_sol = SingleMachineScheduling.srpt_1_rj_sumCj(inst)
 val_cut,sol_cut = SingleMachineScheduling.milp_solve_1_rj_sumCj(inst,MILP_solver=gurobi_solver,srpt_cuts=true)
 @test val_cut == val
 
-

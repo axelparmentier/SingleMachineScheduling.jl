@@ -21,6 +21,9 @@ We introduce the following formulation for ``1|r_j|\sum_j C_j``
 
 where ``x_{ij}`` indicates if job ``i`` is in position ``j``, and ``C_{[j]}`` is the completion time of the job in position ``j``.
 
+This MILP is implemented in function [`SingleMachineScheduling.Instance1_rj_sumCj
+`](@ref)
+
 ## Valid cuts from SRPT
 
 ### Preemptive version ``1|r_j, preemp|\sum_j C_j`` 
@@ -75,9 +78,9 @@ It can be shown that
 ```
 
 Remark that ``[j]`` does not refer to the same job in ``C_{[j]}`` and ``C_{[j]}^S``.
-
-This equation can be introduced a valid cut in the MILP formulation [(MILP)](#milp-formulation).
-Note that in that case ``C_{[j]}`` is a variable, while and ``C_{[j]}^S`` is a precomputed constant?
+This equation can be introduced as a valid cut in the MILP formulation [(MILP)](#milp-formulation).
+Note that in that case ``C_{[j]}`` is a variable, while and ``C_{[j]}^S`` is a precomputed constant. This cut is implemented by default in This MILP is implemented in function [`SingleMachineScheduling.Instance1_rj_sumCj
+`](@ref). It can be removed using the keyword argument `srpt_cuts=false`.
 
 Improved SRPT cuts can be proposed, but we did not implement them 
 
