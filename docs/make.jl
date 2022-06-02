@@ -15,6 +15,8 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Exact MILP" => "milp.md",
+        "API" => "api.md"
     ],
 )
 
