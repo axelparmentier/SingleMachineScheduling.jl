@@ -1,10 +1,10 @@
 
 
 """
-function milp_solve_1_rj_sumCj(
-    inst::Instance1_rj_sumCj{T}; 
-    srpt_cuts=true, 
-    MILP_solver=GLPK.Optimizer
+    function milp_solve_1_rj_sumCj(
+        inst::Instance1_rj_sumCj{T}; 
+        srpt_cuts=true, 
+        MILP_solver=GLPK.Optimizer
     ) where {T}
 
 

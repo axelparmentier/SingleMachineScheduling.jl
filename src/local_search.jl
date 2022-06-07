@@ -1,4 +1,4 @@
-""" function fast_local_descent_1_rj_sumCj!(inst::Instance1_rj_sumCj,sol::Vector{I}) where {I}
+""" 	function fast_local_descent_1_rj_sumCj!(inst::Instance1_rj_sumCj,sol::Vector{I}) where {I}
 
 Performs a fast local descent on the solution `sol` of instance `inst`. Solution `sol` is modified and contains the result at the end.
 """
@@ -46,7 +46,7 @@ function fast_local_descent_1_rj_sumCj!(inst::Instance1_rj_sumCj{T},sol::Abstrac
 	end
 end
 
-## Release Data Iteration heuristic (RDI)
+## Release Date Iteration heuristic (RDI)
 
 function rdi_local_search_subrouting_from_release_time!(
     inst::Instance1_rj_sumCj{T}, 
@@ -100,7 +100,7 @@ end
 		sol::AbstractVector
 	) where {T}
 
-Release Data iteration heuristic
+Release Date Iteration heuristic
 
 """
 function rdi!(

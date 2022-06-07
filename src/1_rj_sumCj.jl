@@ -1,9 +1,9 @@
 """
-    Instance1_rj_sumCj{T} 
-    
-    nb_jobs::Int
-    release_times::Vector{T}
-    processing_times::Vector{T}
+    struct Instance1_rj_sumCj{T} 
+        nb_jobs::Int
+        release_times::Vector{T}
+        processing_times::Vector{T}
+    end
 """
 struct Instance1_rj_sumCj{T} 
     nb_jobs::Int

@@ -48,7 +48,7 @@ end
 
 
 """
-function srpt_1_rj_sumCj(inst::Instance1_rj_sumCj{T}) where {T}
+    function srpt_1_rj_sumCj(inst::Instance1_rj_sumCj{T}) where {T}
 
 computes the preemptive solution of inst, and returns
 
