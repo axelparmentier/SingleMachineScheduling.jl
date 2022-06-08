@@ -11,6 +11,15 @@ struct Instance1_rj_sumCj{T}
     processing_times::Vector{T}
 end
 
+function Instance1_rj_sumCj(my_dict::AbstractDict)
+    return Instance1_rj_sumCj(
+        my_dict["nb_jobs"],
+        my_dict["release_times"],
+        my_dict["processing_times"]
+    )
+end
+
+
 """
     function build_instance_1_rj_sumCj(;seed::Int=0,nb_jobs::Int=10,range::Float64=0.8)
 
@@ -29,6 +38,7 @@ function build_instance_1_rj_sumCj(;seed::Int=0,nb_jobs::Int=10,range::Float64=0
     end
     return Instance1_rj_sumCj(nb_jobs, release_times, processing_times)
 end
+
 
 """
     function evaluate_solution_1_rj_sumCj(inst::Instance1_rj_sumCj,sol::Vector{I}) where {I <: Integer}

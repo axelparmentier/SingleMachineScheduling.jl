@@ -88,7 +88,7 @@ function encoder_1_rj_sumCj(inst::Instance1_rj_sumCj{T}) where {T}
         X[21,j] = inst.processing_times[j] / (1+X[1,j])  
         
         # Nb preemptions
-        X[22,j] = number_of_preemptions[j] / total_number_preemptions
+        X[22,j] = total_number_preemptions ==0 ? 0 : number_of_preemptions[j] / total_number_preemptions
 
         # SRPT position
         X[23,j] = sorted[j] / inst.nb_jobs
@@ -125,10 +125,10 @@ function encoder_1_rj_sumCj(inst::Instance1_rj_sumCj{T}) where {T}
     sum_nb_larger_r_before = sum(nb_larger_r_before)
 
     for j in 1:inst.nb_jobs
-        X[24,j] = nb_smaller_p_before[j] / sum_nb_smaller_p_before
-        X[25,j] = nb_smaller_r_before[j] / sum_nb_smaller_r_before
-        X[26,j] = nb_larger_p_before[j] / sum_nb_larger_p_before
-        X[27,j] = nb_larger_r_before[j] / sum_nb_larger_r_before
+        X[24,j] = sum_nb_smaller_p_before == 0 ? 0 : nb_smaller_p_before[j] / sum_nb_smaller_p_before
+        X[25,j] = sum_nb_smaller_r_before == 0 ? 0 : nb_smaller_r_before[j] / sum_nb_smaller_r_before
+        X[26,j] = sum_nb_larger_p_before == 0 ? 0 : nb_larger_p_before[j] / sum_nb_larger_p_before
+        X[27,j] = sum_nb_larger_r_before == 0 ? 0 : nb_larger_r_before[j] / sum_nb_larger_r_before
     end
 
     return X
