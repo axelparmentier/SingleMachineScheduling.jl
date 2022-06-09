@@ -265,7 +265,7 @@ This enables to check that the post-processing used are not enough alone to get 
 =# 
 
 model_random = Chain(Dense(nb_features,1,bias=false),X->dropdims(X,dims=1))
-test_model_on_training_and_test_set("random model ", model)
+test_model_on_training_and_test_set("random model ", model_random)
 
 # ### Check with values from paper
 
