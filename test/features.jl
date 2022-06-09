@@ -1,6 +1,5 @@
 # # Learning algorithms for ``1|r_j|\sum C_j``
 
-
 using SingleMachineScheduling
 using Flux
 using InferOpt
@@ -106,20 +105,20 @@ test_data = [build_solve_and_encode_instance(seed=s, nb_jobs=n ,range=r, solver=
 Computes features sd
 =#
 
+count_dim = 0
 features_mean = zeros(nb_features)
-dim_count = 0
 for (x,_,inst,_) in training_data
-    dim_count += inst.nb_jobs
+    count_dim += inst.nb_jobs
     for j in 1:inst.nb_jobs
         for f in 1:nb_features
             features_mean[f] += x[f,j]
         end
     end
 end
-features_mean /= dim_count
+features_mean /= count_dim
 features_sd = zeros(nb_features)
 for (x,_,inst,_) in training_data
-    dim_count += inst.nb_jobs
+    count_dim += inst.nb_jobs
     for j in 1:inst.nb_jobs
         for f in 1:nb_features
             features_sd[f] += (x[f,j] - features_mean[f])^2
@@ -170,7 +169,7 @@ fyl_losses = Float64[]
 obj_train_losses = Float64[]
 obj_test_losses = Float64[]
 partial_pipeline = Chain(model,ranking,embedding_to_sequence)
-@showprogress for epoch in 1:500
+@showprogress for epoch in 1:2000
     fyl_l = 0.
     obj_train_l = 0.
     for (x_std, y,inst,val) in std_training_data
@@ -192,7 +191,11 @@ partial_pipeline = Chain(model,ranking,embedding_to_sequence)
     push!(obj_test_losses,obj_test_l)
 end;
 
+# ### Learning results.
+
 #=
+Curves giving the Fenchel Young loss (convex loss used for learning) on the training set and the objective value on the training and test set
+
 Fenchel Young loss
 =#
 
@@ -209,27 +212,14 @@ Loss on the test set
 =#
 lineplot(obj_test_losses[10:length(fyl_losses)], xlabel="Epoch", ylabel="Obj test Loss")
 
-# ## benchmark
+# ## Benchmark
 
-pipeline_without_decoder(inst) = embedding_to_sequence(ranking(model(sd_layer(encoder(inst)))))
+# ### Learned model performance
 
-decoders = [
-    ("no_decoder",(inst,y) -> y),
-    ("local",fast_local_descent_1_rj_sumCj),
-    ("rdi",(inst,y) -> rdi(inst,fast_local_descent_1_rj_sumCj(inst,y)))
-]
+function test_pipeline_on_training_and_test_set(name, pipeline)
+    data_sets = [("train",training_data),("test",test_data)];
 
-pipelines = Any[(name,inst -> decoder(inst, pipeline_without_decoder(inst))) for (name,decoder) in decoders]
-function rdia(inst)
-    _,sol = rdi_aptrf(inst)
-    return sol
-end
-push!(pipelines, ("rdia", rdia))
-
-data_sets = [("train",training_data),("test",test_data)];
-
-for (data_name,data_set) in data_sets
-    for (name, pipeline) in pipelines
+    for (data_name,data_set) in data_sets
         gaps = Float64[]
         gap = 0.
         for (_,_,inst,val) in data_set 
@@ -241,27 +231,49 @@ for (data_name,data_set) in data_sets
     end
 end
 
-# ## Check with values from paper
+function test_model_on_training_and_test_set(model_name, model)
+
+    pipeline_without_decoder(inst) = embedding_to_sequence(ranking(model(sd_layer(encoder(inst)))))
+
+    decoders = [
+        (model_name * "no_decoder",(inst,y) -> y),
+        (model_name * "local",fast_local_descent_1_rj_sumCj),
+        (model_name * "rdi",(inst,y) -> rdi(inst,fast_local_descent_1_rj_sumCj(inst,y)))
+    ]
+    pipelines = [(name,inst -> decoder(inst, pipeline_without_decoder(inst))) for (name,decoder) in decoders]
+    
+    for (name, pipeline) in pipelines
+        test_pipeline_on_training_and_test_set(name,pipeline)        
+    end
+end
+    
+test_model_on_training_and_test_set("learned model " , model)
+    
+# ### Benchmark againt RDI APTRF
+
+function rdia(inst)
+    _,sol = rdi_aptrf(inst)
+    return sol
+end
+
+test_pipeline_on_training_and_test_set("RDI APTRF", rdia)
+
+# ### Comparison to a random model
+
+#=
+This enables to check that the post-processing used are not enough alone to get the performance we have.
+=# 
+
+model_random = Chain(Dense(nb_features,1,bias=false),X->dropdims(X,dims=1))
+test_model_on_training_and_test_set("random model ", model)
+
+# ### Check with values from paper
+
+#=
+Test the performance of the different pipelines on the test set and on the training set with statistical model weights coming from previous work. Enables to benchmark the weights learned above.
+=# 
 
 weights = [9.506266089662077, -1.3710315054206788,  0.1334585280839313, -12.717671717074401, -31.393832945142343, -65.99076384998047, 2727.5046035932914, 61.883341118377146, 20.013854704894786, -306.89057967968387, 11.016281079036249, -33.77663126876743, 2246.5767196831075, 75.12578950854285, -16.140917318465277, -10.391296995373096, 23.56958788377952,  0.2345640964855094, 73.68335584637983, -1.6562121307640043, -244.85450540859512, -41.84024227378858, 89.32668553827389, 14.394554937735686, -206.2433702076072, 46.13339975880264, -56.350659387437126]
 model_paper = Chain(Dense(weights',false),X->dropdims(X,dims=1))
 
-pipeline_without_decoder(inst) = embedding_to_sequence(ranking(model_paper(encoder(inst))))
-
-pipelines = Any[(name,inst -> decoder(inst, pipeline_without_decoder(inst))) for (name,decoder) in decoders]
-push!(pipelines, ("rdia", rdia))
-
-for (name, pipeline) in pipelines
-    gaps = Float64[]
-    gap = 0.
-    for (_,_,inst,val) in test_data 
-        gap = (evaluate_solution_1_rj_sumCj(inst,pipeline(inst)) - val) / val;
-        push!(gaps, gap);
-    end
-    println(histogram(gaps,nbins=10,name=name))
-    println(sum(gaps)/length(gaps))
-end
-
-
-
-
+test_model_on_training_and_test_set("paper model ", model_paper)
