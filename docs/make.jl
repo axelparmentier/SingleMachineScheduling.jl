@@ -1,7 +1,12 @@
 using SingleMachineScheduling
 using Documenter
+using Literate
 
 DocMeta.setdocmeta!(SingleMachineScheduling, :DocTestSetup, :(using SingleMachineScheduling); recursive=true)
+
+expe_jl_file = joinpath(dirname(@__DIR__), "test", "features.jl")
+expe_md_dir = joinpath(@__DIR__, "src")
+Literate.markdown(expe_jl_file, expe_md_dir; documenter=true, execute=true)
 
 makedocs(;
     modules=[SingleMachineScheduling],
@@ -17,6 +22,7 @@ makedocs(;
         "Home" => "index.md",
         "Exact MILP" => "milp.md",
         "Heuristics" => "heuristics.md",
+        "Experiments" => "features.md",
         "API" => "api.md"
     ],
 )

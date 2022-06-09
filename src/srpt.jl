@@ -67,7 +67,6 @@ function srpt_1_rj_sumCj(inst::Instance1_rj_sumCj{T}) where {T}
     processing_time_sequence = T[]
 
     non_available_jobs_per_release_time = sortperm(inst.release_times)
-    println(non_available_jobs_per_release_time)
     available_jobs = JobWithRemainingProcessingTime[]
 
     current_time = zero(T)
@@ -120,8 +119,6 @@ function srpt_1_rj_sumCj(inst::Instance1_rj_sumCj{T}) where {T}
         end
     end
     
-    println(available_jobs)
-
     while (length(available_jobs) > 0)
         job_with_remaining_time = popfirst!(available_jobs)
         push!(job_sequence, job_with_remaining_time.job)

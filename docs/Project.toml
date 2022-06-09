@@ -1,3 +1,9 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Gurobi = "2e9cd046-0924-5485-92f1-d5272153d98b"
+InferOpt = "4846b161-c94e-4150-8dac-c7ae193c601f"
+Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 SingleMachineScheduling = "19d0f219-a092-44e9-aeef-17f7f9a8a253"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"

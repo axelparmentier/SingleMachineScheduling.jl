@@ -46,6 +46,16 @@ function fast_local_descent_1_rj_sumCj!(inst::Instance1_rj_sumCj{T},sol::Abstrac
 	end
 end
 
+""" 	function fast_local_descent_1_rj_sumCj(inst::Instance1_rj_sumCj,sol::Vector{I}) where {I}
+
+Decoder version of `fast_local_descent_1_rj_sumCj!`
+"""
+function fast_local_descent_1_rj_sumCj(inst::Instance1_rj_sumCj{T},sol::AbstractVector) where {T}
+	result = deepcopy(sol)
+	fast_local_descent_1_rj_sumCj!(inst,result)
+	return result
+end
+
 ## Release Date Iteration heuristic (RDI)
 
 function rdi_local_search_subrouting_from_release_time!(
@@ -93,6 +103,7 @@ function rdi_local_search_subrouting_from_release_time!(
 		end
 	end
 end
+
 """
 	function rdi!(
 		inst::Instance1_rj_sumCj{T}, 
@@ -137,6 +148,23 @@ function rdi!(
 		end
 	end
     splice!(sol,1:inst.nb_jobs,best_solution);
+end
+
+"""
+	function rdi(
+		inst::Instance1_rj_sumCj{T}, 
+		sol::AbstractVector
+	) where {T}
+
+Decoder version of rdi. Sol is used both as starting point and as guiding heuristic for rdi
+"""
+function rdi(
+    inst::Instance1_rj_sumCj{T}, 
+    sol::AbstractVector
+) where {T}
+	result = deepcopy(sol)
+	rdi!(inst,invperm(sol),result)
+	return result
 end
 
 # Alternative Priority Rule for Total Flowtime (APRTF)
@@ -254,4 +282,18 @@ function jobs_positions_in_sol(sol)
 		result[job] = pos
 	end
 	return result
+end
+
+"""
+	function rdi_aptrf(inst::Instance1_rj_sumCj)
+
+runs `rdi` on inst with `aptrf` dispatching rule 
+"""
+function rdi_aptrf(inst::Instance1_rj_sumCj)
+	_ , sol_aprtf = SingleMachineScheduling.aprtf(inst)
+	dispatching_rule = jobs_positions_in_sol(sol_aprtf)
+	sol_rdi = sol_aprtf
+	SingleMachineScheduling.rdi!(inst,dispatching_rule,sol_rdi)
+	val_rdi = SingleMachineScheduling.evaluate_solution_1_rj_sumCj(inst,sol_rdi)
+	return val_rdi, sol_rdi
 end

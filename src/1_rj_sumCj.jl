@@ -19,6 +19,13 @@ function Instance1_rj_sumCj(my_dict::AbstractDict)
     )
 end
 
+function print_csv(inst::Instance1_rj_sumCj, filename)
+    f = open(filename,"w")
+    for i in 1:inst.nb_jobs
+        write(f, string(i) * " " * string(inst.release_times[i]) * " " * string(inst.processing_times[i]) * "\n")
+    end
+    close(f)
+end
 
 """
     function build_instance_1_rj_sumCj(;seed::Int=0,nb_jobs::Int=10,range::Float64=0.8)
