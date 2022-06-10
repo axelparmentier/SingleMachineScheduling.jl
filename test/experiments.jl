@@ -16,13 +16,13 @@ Select the encoder. Encoders available
 =#
 
 encoder = encoder_1_rj_sumCj
-nb_features = nb_features_encoder(encoder)
+nb_features = nb_features_encoder(encoder);
 
 #=
 Select the model
 =#
 
-model = Chain(Dense(nb_features,1,bias=false),X->dropdims(X,dims=1))
+model = Chain(Dense(nb_features,1,bias=false),X->dropdims(X,dims=1));
 
 #=
 Select the decoder.
@@ -35,6 +35,7 @@ Decoders available
 =#
 
 decoder = (inst,y) -> y;
+
 #= 
 Solution pipeline
 =#
@@ -108,7 +109,7 @@ Computes features sd
 count_dim = 0
 features_mean = zeros(nb_features)
 for (x,_,inst,_) in training_data
-    count_dim += inst.nb_jobs
+    global count_dim += inst.nb_jobs
     for j in 1:inst.nb_jobs
         for f in 1:nb_features
             features_mean[f] += x[f,j]
@@ -118,17 +119,16 @@ end
 features_mean /= count_dim
 features_sd = zeros(nb_features)
 for (x,_,inst,_) in training_data
-    count_dim += inst.nb_jobs
     for j in 1:inst.nb_jobs
         for f in 1:nb_features
             features_sd[f] += (x[f,j] - features_mean[f])^2
         end
     end
 end
-features_sd = sqrt.(features_sd)
+features_sd = sqrt.(features_sd);
 
 #=
-Standardization layer
+Definition of standardization layer
 =#
 
 struct Standardize_layer
@@ -147,9 +147,14 @@ function (sl::Standardize_layer)(x::AbstractMatrix)
     return res
 end
 
+# Activate the standardization layer
+
 features_sd_inv = (x->1/x).(features_sd)
-sd_layer = Standardize_layer(ones(nb_features))
-# sd_layer = Standardize_layer(features_sd_inv);
+sd_layer = Standardize_layer(features_sd_inv);
+
+# We desactivate the standardization layer for these specific experiments (comment the following block to activate it). Preliminary experiments seems to show that learning is slower with the standardization layer activated.
+
+sd_layer = Standardize_layer(ones(nb_features));
 
 #=
 Loss
@@ -169,7 +174,7 @@ fyl_losses = Float64[]
 obj_train_losses = Float64[]
 obj_test_losses = Float64[]
 partial_pipeline = Chain(model,ranking,embedding_to_sequence)
-@showprogress for epoch in 1:2000
+for epoch in 1:300
     fyl_l = 0.
     obj_train_l = 0.
     for (x_std, y,inst,val) in std_training_data
@@ -259,19 +264,16 @@ end
 test_pipeline_on_training_and_test_set("RDI APTRF", rdia)
 
 # ### Comparison to a random model
-
-#=
-This enables to check that the post-processing used are not enough alone to get the performance we have.
-=# 
+#
+# This enables to check that the post-processing used are not enough alone to get the performance we have. 
 
 model_random = Chain(Dense(nb_features,1,bias=false),X->dropdims(X,dims=1))
 test_model_on_training_and_test_set("random model ", model_random)
 
 # ### Check with values from paper
-
-#=
-Test the performance of the different pipelines on the test set and on the training set with statistical model weights coming from previous work. Enables to benchmark the weights learned above.
-=# 
+#
+# Test the performance of the different pipelines on the test set and on the training set with statistical model weights coming from previous work. Enables to benchmark the weights learned above.
+ 
 
 weights = [9.506266089662077, -1.3710315054206788,  0.1334585280839313, -12.717671717074401, -31.393832945142343, -65.99076384998047, 2727.5046035932914, 61.883341118377146, 20.013854704894786, -306.89057967968387, 11.016281079036249, -33.77663126876743, 2246.5767196831075, 75.12578950854285, -16.140917318465277, -10.391296995373096, 23.56958788377952,  0.2345640964855094, 73.68335584637983, -1.6562121307640043, -244.85450540859512, -41.84024227378858, 89.32668553827389, 14.394554937735686, -206.2433702076072, 46.13339975880264, -56.350659387437126]
 model_paper = Chain(Dense(weights',false),X->dropdims(X,dims=1))
