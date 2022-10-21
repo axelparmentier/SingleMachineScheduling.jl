@@ -1,6 +1,7 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+GLPK = "60bf3e95-4087-53dc-ae20-288a0d20c6a6"
 Gurobi = "2e9cd046-0924-5485-92f1-d5272153d98b"
 InferOpt = "4846b161-c94e-4150-8dac-c7ae193c601f"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"

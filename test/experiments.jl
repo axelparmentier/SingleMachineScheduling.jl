@@ -52,17 +52,15 @@ ranges = 0.2:0.2:1.4;
 
 
 #=
-Utils, do not modify, can be commented if you don't want to use gurobi
+Utils, do not modify, can be commented if you don't want to use GLPK
 =#
 
-using Gurobi
-env = Gurobi.Env()
-gurobi_solver = () -> Gurobi.Optimizer(env)
+# using GLPK
 
-function gurobi_1_rj_sumCj(inst::Instance1_rj_sumCj)
-    return milp_solve_1_rj_sumCj(inst,MILP_solver=gurobi_solver)
-end
-SingleMachineScheduling.solver_name(sol::typeof(gurobi_1_rj_sumCj)) = "gurobi";
+# function glpk_1_rj_sumCj(inst::Instance1_rj_sumCj)
+#     return milp_solve_1_rj_sumCj(inst,MILP_solver=GLPK.Optimizer)
+# end
+# solver_name(sol::typeof(glpk_1_rj_sumCj)) = "glpk"
 
 #=
 Solution algorithm used to build the solution of instances in the training set. Algorithms available:
@@ -72,7 +70,7 @@ Solution algorithm used to build the solution of instances in the training set. 
 - `rdi_aptrf`: heuristic
 =#
 
-solver = gurobi_1_rj_sumCj;
+solver = glpk_1_rj_sumCj;
 
 #=
 Builds the training set
