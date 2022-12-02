@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Learning algorithms for 1r_jsum C_j · SingleMachineScheduling.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link rel="canonical" href="https://axelparmentier.github.io/SingleMachineScheduling.jl/experiments/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">SingleMachineScheduling.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../milp/">Exact MILP</a></li><li><a class="tocitem" href="../heuristics/">Heuristics</a></li><li><a class="tocitem" href="../api/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Learning algorithms for <span>$1|r_j|\sum C_j$</span></a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Learning algorithms for <span>$1|r_j|\sum C_j$</span></a></li></ul></nav><div class="docs-right"><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Learning-algorithms-for-1r_j\\sum-C_j"><a class="docs-heading-anchor" href="#Learning-algorithms-for-1r_j\\sum-C_j">Learning algorithms for <span>$1|r_j|\sum C_j$</span></a><a id="Learning-algorithms-for-1r_j\\sum-C_j-1"></a><a class="docs-heading-anchor-permalink" href="#Learning-algorithms-for-1r_j\\sum-C_j" title="Permalink"></a></h1><pre><code class="language-julia hljs">using SingleMachineScheduling
+using Flux
+using InferOpt
+using UnicodePlots
+using ProgressMeter</code></pre><h2 id="Solution-pipeline"><a class="docs-heading-anchor" href="#Solution-pipeline">Solution pipeline</a><a id="Solution-pipeline-1"></a><a class="docs-heading-anchor-permalink" href="#Solution-pipeline" title="Permalink"></a></h2><p>Select the encoder. Encoders available</p><ul><li><code>encoder_1_rj_sumCj</code></li></ul><pre><code class="language-julia hljs">encoder = encoder_1_rj_sumCj
+nb_features = nb_features_encoder(encoder);</code></pre><p>Select the model</p><pre><code class="language-julia hljs">model = Chain(Dense(nb_features,1,bias=false),X-&gt;dropdims(X,dims=1));</code></pre><p>Select the decoder.</p><p>Decoders available</p><ul><li><code>(inst,y) -&gt; y</code>: no decoder</li><li><code>decoder = fast_local_descent_1_rj_sumCj</code></li><li><code>decoder = (inst,y) -&gt; rdi(inst,fast_local_descent_1_rj_sumCj(inst,y))</code></li></ul><pre><code class="language-julia hljs">decoder = (inst,y) -&gt; y;
+
+#=
+Solution pipeline
+=#
+
+pipeline(inst) = decoder(inst,embedding_to_sequence(ranking(model(encoder(inst)))));</code></pre><h2 id="Training-set"><a class="docs-heading-anchor" href="#Training-set">Training set</a><a id="Training-set-1"></a><a class="docs-heading-anchor-permalink" href="#Training-set" title="Permalink"></a></h2><p>Instances in the training set</p><pre><code class="language-julia hljs">seeds = 1:10;
+nb_jobs = 50:10:100;
+ranges = 0.2:0.2:1.4;</code></pre><p>Utils, do not modify, can be commented if you don&#39;t want to use gurobi</p><pre><code class="language-julia hljs">using Gurobi
+env = Gurobi.Env()
+gurobi_solver = () -&gt; Gurobi.Optimizer(env)
+
+function gurobi_1_rj_sumCj(inst::Instance1_rj_sumCj)
+    return milp_solve_1_rj_sumCj(inst,MILP_solver=gurobi_solver)
+end
+SingleMachineScheduling.solver_name(sol::typeof(gurobi_1_rj_sumCj)) = &quot;gurobi&quot;;</code></pre><pre><code class="nohighlight hljs">
+--------------------------------------------
+Warning: your license will expire in 13 days
+--------------------------------------------
+
+Academic license - for non-commercial use only
+</code></pre><p>Solution algorithm used to build the solution of instances in the training set. Algorithms available:</p><ul><li><code>glpk_1_rj_sumCj</code>: exact</li><li><code>gurobi_1_rj_sumCj</code>: exact</li><li><code>rdi_aptrf</code>: heuristic</li></ul><pre><code class="language-julia hljs">solver = gurobi_1_rj_sumCj;</code></pre><p>Builds the training set</p><pre><code class="language-julia hljs">training_data = [build_solve_and_encode_instance(seed=s, nb_jobs=n ,range=r, solver=solver, load_and_save=true) for s in seeds for n in nb_jobs for r in ranges];</code></pre><h2 id="Test-set"><a class="docs-heading-anchor" href="#Test-set">Test set</a><a id="Test-set-1"></a><a class="docs-heading-anchor-permalink" href="#Test-set" title="Permalink"></a></h2><p>Select the instances in the test set</p><pre><code class="language-julia hljs">seeds = 50:60;
+nb_jobs = 50:10:100;
+ranges = 0.2:0.2:1.4;</code></pre><p>Select the benchmark algorithm used on the test set. Same algorithms available as for training set</p><pre><code class="language-julia hljs">solver = rdi_aptrf;</code></pre><p>Build the test set</p><pre><code class="language-julia hljs">test_data = [build_solve_and_encode_instance(seed=s, nb_jobs=n ,range=r, solver=solver, load_and_save=true) for s in seeds for n in nb_jobs for r in ranges];</code></pre><h2 id="Learning"><a class="docs-heading-anchor" href="#Learning">Learning</a><a id="Learning-1"></a><a class="docs-heading-anchor-permalink" href="#Learning" title="Permalink"></a></h2><p>Computes features sd</p><pre><code class="language-julia hljs">count_dim = 0
+features_mean = zeros(nb_features)
+for (x,_,inst,_) in training_data
+    global count_dim += inst.nb_jobs
+    for j in 1:inst.nb_jobs
+        for f in 1:nb_features
+            features_mean[f] += x[f,j]
+        end
+    end
+end
+features_mean /= count_dim
+features_sd = zeros(nb_features)
+for (x,_,inst,_) in training_data
+    for j in 1:inst.nb_jobs
+        for f in 1:nb_features
+            features_sd[f] += (x[f,j] - features_mean[f])^2
+        end
+    end
+end
+features_sd = sqrt.(features_sd);</code></pre><p>Definition of standardization layer</p><pre><code class="language-julia hljs">struct Standardize_layer
+    sd_inv::Vector{Float64}
+end
+
+function (sl::Standardize_layer)(x::AbstractMatrix)
+    (nf,nj) = size(x)
+    @assert nf == length(sl.sd_inv)
+    res = zeros(nf,nj)
+    for j in 1:nj
+        for f in 1:nf
+            res[f,j] = x[f,j] * sl.sd_inv[f]
+        end
+    end
+    return res
+end</code></pre><p>Activate the standardization layer</p><pre><code class="language-julia hljs">features_sd_inv = (x-&gt;1/x).(features_sd)
+sd_layer = Standardize_layer(features_sd_inv);</code></pre><p>We desactivate the standardization layer for these specific experiments (comment the following block to activate it)</p><pre><code class="language-julia hljs">sd_layer = Standardize_layer(ones(nb_features));</code></pre><p>Loss</p><pre><code class="language-julia hljs">regularized_predictor = Perturbed(ranking; ε = 1.0, M=20)
+loss = FenchelYoungLoss(regularized_predictor);</code></pre><p>Learning</p><pre><code class="language-julia hljs">std_training_data = [(sd_layer(x),y,inst,val) for (x,y,inst,val) in training_data]
+std_test_data = [(sd_layer(x),y,inst,val) for (x,y,inst,val) in test_data]
+
+opt = ADAM();
+fyl_losses = Float64[]
+obj_train_losses = Float64[]
+obj_test_losses = Float64[]
+partial_pipeline = Chain(model,ranking,embedding_to_sequence)
+for epoch in 1:300
+    fyl_l = 0.
+    obj_train_l = 0.
+    for (x_std, y,inst,val) in std_training_data
+        grads = gradient(Flux.params(model)) do
+            fyl_l += loss(model(x_std), y)
+        end
+        obj_train_l += (evaluate_solution_1_rj_sumCj(inst,partial_pipeline(x_std)) - val) / val
+        Flux.update!(opt, Flux.params(model), grads)
+    end
+    obj_train_l /= length(training_data)
+    push!(fyl_losses, fyl_l)
+    push!(obj_train_losses, obj_train_l)
+
+    obj_test_l = 0.0
+    for (x,y,inst,val) in std_test_data
+        obj_test_l += (evaluate_solution_1_rj_sumCj(inst,partial_pipeline(x)) - val) / val
+    end
+    obj_test_l /= length(std_test_data)
+    push!(obj_test_losses,obj_test_l)
+end;</code></pre><h3 id="Learning-results."><a class="docs-heading-anchor" href="#Learning-results.">Learning results.</a><a id="Learning-results.-1"></a><a class="docs-heading-anchor-permalink" href="#Learning-results." title="Permalink"></a></h3><p>Curves giving the Fenchel Young loss (convex loss used for learning) on the training set and the objective value on the training and test set</p><p>Fenchel Young loss</p><pre><code class="language-julia hljs">lineplot(fyl_losses[10:length(fyl_losses)], xlabel=&quot;Epoch&quot;, ylabel=&quot;FY Loss&quot;)</code></pre><pre><code class="nohighlight hljs">                  ┌────────────────────────────────────────┐ 
+           300000 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                  │⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                  │⢇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                  │⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+   FY Loss        │⠈⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                  │⠀⠹⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                  │⠀⠀⢱⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                  │⠀⠀⠀⠙⠦⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                  │⠀⠀⠀⠀⠀⠈⠉⠙⠛⠓⠓⠓⠻⠒⠒⠶⠖⠖⠖⠖⠶⠖⠓⠶⠾⠶⠞⠖⠳⠶⠶⠟⠖⠲⠒⠶⠾⠲⠶⠀│ 
+                  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                0 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                  └────────────────────────────────────────┘ 
+                  ⠀0⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀300⠀ 
+                  ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀Epoch⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ </code></pre><p>Loss on the training set</p><pre><code class="language-julia hljs">lineplot(obj_train_losses[10:length(fyl_losses)], xlabel=&quot;Epoch&quot;, ylabel=&quot;Obj train Loss&quot;)</code></pre><pre><code class="nohighlight hljs">                      ┌────────────────────────────────────────┐ 
+                  0.2 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                      │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                      │⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                      │⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                      │⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                      │⢱⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                      │⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+   Obj train Loss     │⠘⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                      │⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                      │⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                      │⠀⠀⢇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                      │⠀⠀⠈⢆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                      │⠀⠀⠀⠈⠳⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                      │⠀⠀⠀⠀⠀⠈⠓⠢⠤⣤⣀⣀⣀⣀⣀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                    0 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠀│ 
+                      └────────────────────────────────────────┘ 
+                      ⠀0⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀300⠀ 
+                      ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀Epoch⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ </code></pre><p>Loss on the test set</p><pre><code class="language-julia hljs">lineplot(obj_test_losses[10:length(fyl_losses)], xlabel=&quot;Epoch&quot;, ylabel=&quot;Obj test Loss&quot;)</code></pre><pre><code class="nohighlight hljs">                     ┌────────────────────────────────────────┐ 
+                 0.2 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                     │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                     │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                     │⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                     │⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                     │⢣⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                     │⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+   Obj test Loss     │⠘⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                     │⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                     │⠀⢸⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                     │⠀⠀⢇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                     │⠀⠀⠈⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                     │⠀⠀⠀⠈⠳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                     │⠀⠀⠀⠀⠀⠈⠙⠒⠦⢤⣄⣀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ 
+                   0 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠀│ 
+                     └────────────────────────────────────────┘ 
+                     ⠀0⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀300⠀ 
+                     ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀Epoch⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ </code></pre><h2 id="Benchmark"><a class="docs-heading-anchor" href="#Benchmark">Benchmark</a><a id="Benchmark-1"></a><a class="docs-heading-anchor-permalink" href="#Benchmark" title="Permalink"></a></h2><h3 id="Learned-model-performance"><a class="docs-heading-anchor" href="#Learned-model-performance">Learned model performance</a><a id="Learned-model-performance-1"></a><a class="docs-heading-anchor-permalink" href="#Learned-model-performance" title="Permalink"></a></h3><pre><code class="language-julia hljs">function test_pipeline_on_training_and_test_set(name, pipeline)
+    data_sets = [(&quot;train&quot;,training_data),(&quot;test&quot;,test_data)];
+
+    for (data_name,data_set) in data_sets
+        gaps = Float64[]
+        gap = 0.
+        for (_,_,inst,val) in data_set
+            gap = (evaluate_solution_1_rj_sumCj(inst,pipeline(inst)) - val) / val;
+            push!(gaps, gap);
+        end
+        println(histogram(gaps,nbins=10,name=name * &quot; &quot; * data_name))
+        println(sum(gaps)/length(gaps))
+    end
+end
+
+function test_model_on_training_and_test_set(model_name, model)
+
+    pipeline_without_decoder(inst) = embedding_to_sequence(ranking(model(sd_layer(encoder(inst)))))
+
+    decoders = [
+        (model_name * &quot;no_decoder&quot;,(inst,y) -&gt; y),
+        (model_name * &quot;local&quot;,fast_local_descent_1_rj_sumCj),
+        (model_name * &quot;rdi&quot;,(inst,y) -&gt; rdi(inst,fast_local_descent_1_rj_sumCj(inst,y)))
+    ]
+    pipelines = [(name,inst -&gt; decoder(inst, pipeline_without_decoder(inst))) for (name,decoder) in decoders]
+
+    for (name, pipeline) in pipelines
+        test_pipeline_on_training_and_test_set(name,pipeline)
+    end
+end
+
+test_model_on_training_and_test_set(&quot;learned model &quot; , model)</code></pre><pre><code class="nohighlight hljs">                ┌                                        ┐                               
+   [0.0 , 0.01) ┤███████████████████████████████████  165  learned model no_decoder train
+   [0.01, 0.02) ┤███████████████████████████████▎ 147                                    
+   [0.02, 0.03) ┤███████████████▏ 71                                                     
+   [0.03, 0.04) ┤█████▌ 26                                                               
+   [0.04, 0.05) ┤█▊ 9                                                                    
+   [0.05, 0.06) ┤  0                                                                     
+   [0.06, 0.07) ┤  0                                                                     
+   [0.07, 0.08) ┤▌ 2                                                                     
+                └                                        ┘                               
+                                 Frequency                                               
+0.014557739228648524
+                  ┌                                        ┐                              
+   [-0.01,  0.0 ) ┤██▍ 14                                    learned model no_decoder test
+   [ 0.0 ,  0.01) ┤███████████████████████████████████  214                               
+   [ 0.01,  0.02) ┤████████████████████████▌ 150                                          
+   [ 0.02,  0.03) ┤██████████▋ 65                                                         
+   [ 0.03,  0.04) ┤█▊ 11                                                                  
+   [ 0.04,  0.05) ┤▋ 4                                                                    
+   [ 0.05,  0.06) ┤▌ 3                                                                    
+   [ 0.06,  0.07) ┤  0                                                                    
+   [ 0.07,  0.08) ┤  0                                                                    
+   [ 0.08,  0.09) ┤  0                                                                    
+   [ 0.09,  0.1 ) ┤▎ 1                                                                    
+                  └                                        ┘                              
+                                   Frequency                                              
+0.01219254155420144
+                ┌                                        ┐                          
+   [0.0 , 0.01) ┤███████████████████████████████████  212  learned model local train
+   [0.01, 0.02) ┤█████████████████████████▎ 152                                     
+   [0.02, 0.03) ┤███████▎ 43                                                        
+   [0.03, 0.04) ┤█▋ 10                                                              
+   [0.04, 0.05) ┤▎ 1                                                                
+   [0.05, 0.06) ┤  0                                                                
+   [0.06, 0.07) ┤▍ 2                                                                
+                └                                        ┘                          
+                                 Frequency                                          
+0.011084772514537483
+                  ┌                                        ┐                         
+   [-0.02, -0.01) ┤▍ 2                                       learned model local test
+   [-0.01,  0.0 ) ┤███▏ 23                                                           
+   [ 0.0 ,  0.01) ┤███████████████████████████████████  263                          
+   [ 0.01,  0.02) ┤██████████████████▋ 140                                           
+   [ 0.02,  0.03) ┤███▉ 30                                                           
+   [ 0.03,  0.04) ┤▎ 1                                                               
+   [ 0.04,  0.05) ┤▍ 3                                                               
+                  └                                        ┘                         
+                                   Frequency                                         
+0.00868317232381912
+                  ┌                                        ┐                        
+   [0.0  , 0.005) ┤███████████████████████████████████  372  learned model rdi train
+   [0.005, 0.01 ) ┤██▊ 31                                                           
+   [0.01 , 0.015) ┤█▍ 15                                                            
+   [0.015, 0.02 ) ┤  0                                                              
+   [0.02 , 0.025) ┤▎ 2                                                              
+                  └                                        ┘                        
+                                   Frequency                                        
+0.002515767000202535
+                    ┌                                        ┐                       
+   [-0.025, -0.02 ) ┤▎ 1                                       learned model rdi test
+   [-0.02 , -0.015) ┤▎ 2                                                             
+   [-0.015, -0.01 ) ┤▍ 3                                                             
+   [-0.01 , -0.005) ┤█▍ 13                                                           
+   [-0.005,  0.0  ) ┤███████▎ 74                                                     
+   [ 0.0  ,  0.005) ┤███████████████████████████████████  360                        
+   [ 0.005,  0.01 ) ┤▊ 8                                                             
+   [ 0.01 ,  0.015) ┤  0                                                             
+   [ 0.015,  0.02 ) ┤▎ 1                                                             
+                    └                                        ┘                       
+                                     Frequency                                       
+0.00018478607912945626
+</code></pre><h3 id="Benchmark-againt-RDI-APTRF"><a class="docs-heading-anchor" href="#Benchmark-againt-RDI-APTRF">Benchmark againt RDI APTRF</a><a id="Benchmark-againt-RDI-APTRF-1"></a><a class="docs-heading-anchor-permalink" href="#Benchmark-againt-RDI-APTRF" title="Permalink"></a></h3><pre><code class="language-julia hljs">function rdia(inst)
+    _,sol = rdi_aptrf(inst)
+    return sol
+end
+
+test_pipeline_on_training_and_test_set(&quot;RDI APTRF&quot;, rdia)</code></pre><pre><code class="nohighlight hljs">                  ┌                                        ┐                
+   [0.0  , 0.005) ┤███████████████████████████████████  380  RDI APTRF train
+   [0.005, 0.01 ) ┤█▌ 17                                                    
+   [0.01 , 0.015) ┤█▏ 11                                                    
+   [0.015, 0.02 ) ┤▊ 9                                                      
+   [0.02 , 0.025) ┤▎ 1                                                      
+   [0.025, 0.03 ) ┤▎ 2                                                      
+                  └                                        ┘                
+                                   Frequency                                
+0.0023261444095230587
+              ┌                                        ┐               
+   [0.0, 1.0) ┤███████████████████████████████████  462  RDI APTRF test
+              └                                        ┘               
+                               Frequency                               
+0.0
+</code></pre><h3 id="Comparison-to-a-random-model"><a class="docs-heading-anchor" href="#Comparison-to-a-random-model">Comparison to a random model</a><a id="Comparison-to-a-random-model-1"></a><a class="docs-heading-anchor-permalink" href="#Comparison-to-a-random-model" title="Permalink"></a></h3><p>This enables to check that the post-processing used are not enough alone to get the performance we have.</p><pre><code class="language-julia hljs">model_random = Chain(Dense(nb_features,1,bias=false),X-&gt;dropdims(X,dims=1))
+test_model_on_training_and_test_set(&quot;random model &quot;, model_random)</code></pre><pre><code class="nohighlight hljs">              ┌                                        ┐                              
+   [0.8, 1.0) ┤█▊ 6                                      random model no_decoder train
+   [1.0, 1.2) ┤██████████  34                                                         
+   [1.2, 1.4) ┤████████████████████▊ 71                                               
+   [1.4, 1.6) ┤████████████████████████████████▉ 112                                  
+   [1.6, 1.8) ┤███████████████████████████████████  119                               
+   [1.8, 2.0) ┤██████████████████▌ 63                                                 
+   [2.0, 2.2) ┤███▌ 12                                                                
+   [2.2, 2.4) ┤▊ 3                                                                    
+              └                                        ┘                              
+                               Frequency                                              
+1.5625934749446024
+              ┌                                        ┐                             
+   [0.8, 1.0) ┤███▎ 14                                   random model no_decoder test
+   [1.0, 1.2) ┤██████████▌ 46                                                        
+   [1.2, 1.4) ┤████████████████▍ 72                                                  
+   [1.4, 1.6) ┤███████████████████████████████████  154                              
+   [1.6, 1.8) ┤████████████████████████████████▌ 143                                 
+   [1.8, 2.0) ┤██████▊ 30                                                            
+   [2.0, 2.2) ┤▋ 3                                                                   
+              └                                        ┘                             
+                               Frequency                                             
+1.5046112027535476
+              ┌                                        ┐                         
+   [0.0, 0.2) ┤▍ 1                                       random model local train
+   [0.2, 0.4) ┤█████▋ 18                                                         
+   [0.4, 0.6) ┤██████████████▊ 47                                                
+   [0.6, 0.8) ┤█████████████▎ 42                                                 
+   [0.8, 1.0) ┤████████████████▋ 53                                              
+   [1.0, 1.2) ┤███████████████████████████████████  111                          
+   [1.2, 1.4) ┤████████████████████████████████▊ 104                             
+   [1.4, 1.6) ┤████████████▉ 41                                                  
+   [1.6, 1.8) ┤▉ 3                                                               
+              └                                        ┘                         
+                               Frequency                                         
+1.0163335483214315
+              ┌                                        ┐                        
+   [0.2, 0.4) ┤██████▎ 30                                random model local test
+   [0.4, 0.6) ┤█████████▏ 44                                                    
+   [0.6, 0.8) ┤██████████▍ 50                                                   
+   [0.8, 1.0) ┤████████████▉ 63                                                 
+   [1.0, 1.2) ┤███████████████████████████████████  170                         
+   [1.2, 1.4) ┤███████████████████▌ 95                                          
+   [1.4, 1.6) ┤██▏ 10                                                           
+              └                                        ┘                        
+                               Frequency                                        
+0.9698502112215877
+                ┌                                        ┐                       
+   [0.0 , 0.02) ┤███████████████████████████████████  288  random model rdi train
+   [0.02, 0.04) ┤████▋ 38                                                        
+   [0.04, 0.06) ┤██▋ 22                                                          
+   [0.06, 0.08) ┤██▊ 23                                                          
+   [0.08, 0.1 ) ┤██▌ 20                                                          
+   [0.1 , 0.12) ┤█▊ 15                                                           
+   [0.12, 0.14) ┤▎ 2                                                             
+   [0.14, 0.16) ┤▋ 5                                                             
+   [0.16, 0.18) ┤▋ 6                                                             
+   [0.18, 0.2 ) ┤▎ 1                                                             
+                └                                        ┘                       
+                                 Frequency                                       
+0.02609663976506764
+                ┌                                        ┐                      
+   [-0.1,  0.0) ┤█████▌ 55                                 random model rdi test
+   [ 0.0,  0.1) ┤███████████████████████████████████  349                       
+   [ 0.1,  0.2) ┤███▍ 33                                                        
+   [ 0.2,  0.3) ┤▎ 2                                                            
+   [ 0.3,  0.4) ┤▊ 8                                                            
+   [ 0.4,  0.5) ┤█▎ 11                                                          
+   [ 0.5,  0.6) ┤▍ 4                                                            
+                └                                        ┘                      
+                                 Frequency                                      
+0.04593212499919188
+</code></pre><h3 id="Check-with-values-from-paper"><a class="docs-heading-anchor" href="#Check-with-values-from-paper">Check with values from paper</a><a id="Check-with-values-from-paper-1"></a><a class="docs-heading-anchor-permalink" href="#Check-with-values-from-paper" title="Permalink"></a></h3><p>Test the performance of the different pipelines on the test set and on the training set with statistical model weights coming from previous work. Enables to benchmark the weights learned above.</p><pre><code class="language-julia hljs">weights = [9.506266089662077, -1.3710315054206788,  0.1334585280839313, -12.717671717074401, -31.393832945142343, -65.99076384998047, 2727.5046035932914, 61.883341118377146, 20.013854704894786, -306.89057967968387, 11.016281079036249, -33.77663126876743, 2246.5767196831075, 75.12578950854285, -16.140917318465277, -10.391296995373096, 23.56958788377952,  0.2345640964855094, 73.68335584637983, -1.6562121307640043, -244.85450540859512, -41.84024227378858, 89.32668553827389, 14.394554937735686, -206.2433702076072, 46.13339975880264, -56.350659387437126]
+model_paper = Chain(Dense(weights&#39;,false),X-&gt;dropdims(X,dims=1))
+
+test_model_on_training_and_test_set(&quot;paper model &quot;, model_paper)</code></pre><pre><code class="nohighlight hljs">                ┌                                        ┐                             
+   [0.0 , 0.02) ┤███▊ 15                                   paper model no_decoder train
+   [0.02, 0.04) ┤█████████▏ 35                                                         
+   [0.04, 0.06) ┤███████████████▊ 61                                                   
+   [0.06, 0.08) ┤███████████████████████████████████  135                              
+   [0.08, 0.1 ) ┤█████████████████████████▋ 99                                         
+   [0.1 , 0.12) ┤███████████▉ 46                                                       
+   [0.12, 0.14) ┤████▍ 17                                                              
+   [0.14, 0.16) ┤█▊ 7                                                                  
+   [0.16, 0.18) ┤▊ 3                                                                   
+   [0.18, 0.2 ) ┤▌ 2                                                                   
+                └                                        ┘                             
+                                 Frequency                                             
+0.07576496837960733
+                  ┌                                        ┐                            
+   [-0.02,  0.0 ) ┤▊ 3                                       paper model no_decoder test
+   [ 0.0 ,  0.02) ┤█████▍ 19                                                            
+   [ 0.02,  0.04) ┤████████████▊ 46                                                     
+   [ 0.04,  0.06) ┤████████████████████████▋ 88                                         
+   [ 0.06,  0.08) ┤███████████████████████████████████  125                             
+   [ 0.08,  0.1 ) ┤█████████████████████████████████▊ 121                               
+   [ 0.1 ,  0.12) ┤██████████▉ 39                                                       
+   [ 0.12,  0.14) ┤█████▍ 19                                                            
+   [ 0.14,  0.16) ┤  0                                                                  
+   [ 0.16,  0.18) ┤▌ 2                                                                  
+                  └                                        ┘                            
+                                   Frequency                                            
+0.07044254023365457
+                ┌                                        ┐                        
+   [0.0 , 0.01) ┤███████████████████████████████████  369  paper model local train
+   [0.01, 0.02) ┤██▊ 29                                                           
+   [0.02, 0.03) ┤▌ 5                                                              
+   [0.03, 0.04) ┤▊ 8                                                              
+   [0.04, 0.05) ┤▌ 5                                                              
+   [0.05, 0.06) ┤▎ 2                                                              
+   [0.06, 0.07) ┤▎ 2                                                              
+                └                                        ┘                        
+                                 Frequency                                        
+0.004613449375132551
+                  ┌                                        ┐                       
+   [-0.03, -0.02) ┤▎ 1                                       paper model local test
+   [-0.02, -0.01) ┤█▋ 11                                                           
+   [-0.01,  0.0 ) ┤█████████████████████████▌ 168                                  
+   [ 0.0 ,  0.01) ┤███████████████████████████████████  231                        
+   [ 0.01,  0.02) ┤████▎ 28                                                        
+   [ 0.02,  0.03) ┤█▍ 9                                                            
+   [ 0.03,  0.04) ┤▌ 3                                                             
+   [ 0.04,  0.05) ┤▊ 6                                                             
+   [ 0.05,  0.06) ┤▌ 3                                                             
+   [ 0.06,  0.07) ┤▎ 1                                                             
+   [ 0.07,  0.08) ┤▎ 1                                                             
+                  └                                        ┘                       
+                                   Frequency                                       
+0.0027501374607042054
+                  ┌                                        ┐                      
+   [0.0  , 0.001) ┤███████████████████████████████████  235  paper model rdi train
+   [0.001, 0.002) ┤████████████████▉ 114                                          
+   [0.002, 0.003) ┤███████▍ 49                                                    
+   [0.003, 0.004) ┤██▎ 14                                                         
+   [0.004, 0.005) ┤▎ 1                                                            
+   [0.005, 0.006) ┤▌ 3                                                            
+   [0.006, 0.007) ┤▍ 2                                                            
+   [0.007, 0.008) ┤  0                                                            
+   [0.008, 0.009) ┤  0                                                            
+   [0.009, 0.01 ) ┤▎ 1                                                            
+   [0.01 , 0.011) ┤▎ 1                                                            
+                  └                                        ┘                      
+                                   Frequency                                      
+0.0011762948716585167
+                    ┌                                        ┐                     
+   [-0.025, -0.02 ) ┤▎ 1                                       paper model rdi test
+   [-0.02 , -0.015) ┤▋ 4                                                           
+   [-0.015, -0.01 ) ┤█▍ 8                                                          
+   [-0.01 , -0.005) ┤███▊ 23                                                       
+   [-0.005,  0.0  ) ┤██████████████████████████████████▋ 210                       
+   [ 0.0  ,  0.005) ┤███████████████████████████████████  212                      
+   [ 0.005,  0.01 ) ┤▌ 3                                                           
+   [ 0.01 ,  0.015) ┤  0                                                           
+   [ 0.015,  0.02 ) ┤▎ 1                                                           
+                    └                                        ┘                     
+                                     Frequency                                     
+-0.001012941597738036
+</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Friday 2 December 2022 09:59">Friday 2 December 2022</span>. Using Julia version 1.8.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
